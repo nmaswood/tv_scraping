@@ -2,6 +2,8 @@ from urllib.request import FancyURLopener
 from bs4 import BeautifulSoup
 from random import choice
 import csv
+from time import sleep
+
 
 user_agents = [
 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
@@ -19,26 +21,33 @@ myopener = MyOpener()
 
 def tv_urls():
 
-    url = "http://www.tv.com/shows/sort/a_z/category/game-show/decade/2010s/"
-    urls = [url]
-    for i in range(2,8):
-        urls.append(url + "page{}/".format(i))
+    urls = list()
+    url = "http://www.metacritic.com/browse/tv/score/metascore/year/all?sort=desc&year_selected=2015&page={}"
+    for i in range(0,3):
+        urls.append(url.format(i))
     return urls
-
 
 def get_shows():
 
+    with open('meta_critic.csv', 'w') as outfile:
+        writer = csv.writer(outfile, delimiter=',')
+        writer.writerow(["rank", "score", "name", "user_score", "date"])
+
+        for url in tv_urls():
+            sleep(1)
+            html =  myopener.open(url)
+            html = html.read()
+            bs_obj = BeautifulSoup(html, "html5lib")
+            div = bs_obj.select("div.product_rows > div.product_row")
+            for row in  div:
+                rank  = row.select("div.row_num")[0].contents[0].strip().replace(".","")
+                score = row.select("div.product_score > div.metascore_w")[0].contents[0].strip()
+                name  = row.select("div.product_title > a")[0].get('href').split("/tv/")[-1].strip()
+                user_score = row.select("span.textscore")[0].contents[0].strip()
+                date = row.select("div.product_date")[0].contents[0].strip().replace(",", ";")
+                fields = [rank, score, name, user_score, date]
+                writer.writerows([fields])
 
 
-
-    for url in tv_urls():
-        html =  myopener.open(url)
-        html = html.read()
-        bs_obj = BeautifulSoup(html, "html5")
-        div = bs_obj.select("div._clearfix > ul > li > a")
-        show_urls = map (lambda x: x.get('href'), div)
-        print (list(a))
-
-        break
 
 get_shows()
